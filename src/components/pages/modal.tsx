@@ -27,6 +27,11 @@ type FormValues = RouterInputs["data"]["analyze"];
 const Modal: NextPage<ModalProps> = ({ open, setOpen, filePath }) => {
   const [response, setResponse] = useState<string>();
   const [writeQuestion, setWriteQuestion] = useState(false);
+  const questions = [
+    "Tell me about the data",
+    "How do I find CustomerID who bought biggest Quantity?",
+  ]; // preset questions about data
+
   const { mutateAsync, isSuccess, isPending } = api.data.analyze.useMutation();
 
   const { register, handleSubmit, setValue } = useForm<FormValues>();
@@ -83,12 +88,13 @@ const Modal: NextPage<ModalProps> = ({ open, setOpen, filePath }) => {
                   <SelectContent>
                     <SelectGroup>
                       <SelectLabel>Questions</SelectLabel>
-                      <SelectItem value="Tell me about the data">
-                        Tell me about the data
-                      </SelectItem>
-                      <SelectItem value="How do I find CustomerID who bought biggest Quantity?">
-                        How do I find CustomerID who bought biggest Quantity?
-                      </SelectItem>
+                      {questions.map((question, idx) => {
+                        return (
+                          <SelectItem key={idx} value={question}>
+                            {question}
+                          </SelectItem>
+                        );
+                      })}
                       <SelectItem value="None">
                         Write a question myself
                       </SelectItem>
