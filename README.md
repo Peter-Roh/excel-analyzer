@@ -28,7 +28,7 @@ This project is a proof of concept that building back office powered by LLM will
 
 - View data of excel file in a table view
 
-- Ask LLM a question about the data and get answer
+- Ask LLM questions about the data and get answer
 
 ## Installation
 
