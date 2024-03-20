@@ -1,5 +1,5 @@
 import type { NextPage } from "next";
-import { useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { type SubmitHandler, useForm } from "react-hook-form";
 
 import { type RouterInputs, api } from "@/utils/api";
@@ -19,19 +19,20 @@ import {
 type ModalProps = {
   open: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
+  filePath: string | undefined;
 };
 
 type FormValues = RouterInputs["data"]["analyze"];
 
-const Modal: NextPage<ModalProps> = ({ open, setOpen }) => {
+const Modal: NextPage<ModalProps> = ({ open, setOpen, filePath }) => {
   const [response, setResponse] = useState<string>();
   const [writeQuestion, setWriteQuestion] = useState(false);
   const { mutateAsync, isSuccess, isPending } = api.data.analyze.useMutation();
 
   const { register, handleSubmit, setValue } = useForm<FormValues>();
 
-  const onValid: SubmitHandler<FormValues> = ({ question }) => {
-    void mutateAsync({ question }).then((res) => {
+  const onValid: SubmitHandler<FormValues> = ({ path, question }) => {
+    void mutateAsync({ path, question }).then((res) => {
       if (res.data) {
         setResponse(res.data);
       }
@@ -47,6 +48,12 @@ const Modal: NextPage<ModalProps> = ({ open, setOpen }) => {
       setValue("question", "");
     }
   };
+
+  useEffect(() => {
+    if (filePath) {
+      setValue("path", filePath);
+    }
+  }, [filePath, setValue]);
 
   return (
     <div

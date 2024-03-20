@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 
 from langchain.chat_models import ChatOllama
@@ -10,6 +10,9 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema.runnable import RunnablePassthrough
 
 from pydantic import BaseModel
+
+import shutil
+from datetime import datetime
 
 app = FastAPI(
     title="Excel Analyzer",
@@ -40,14 +43,20 @@ embeddings = OllamaEmbeddings(
 cache_dir = LocalFileStore("./.cache/")
 cached_embeddings = CacheBackedEmbeddings.from_bytes_store(embeddings, cache_dir)
 
-# TODO LOAD FILE
+class UploadResult(BaseModel):
+    path: str
 
-
-
-loader = CSVLoader("./api/file/data.csv")
+@app.post("/api/py/upload", response_model=UploadResult)
+async def upload(file: UploadFile = File(...)):
+    current_time_string = datetime.now().strftime("%Y%m%d%H%M%S%f")
+    path = f"./api/file/data_{current_time_string}.csv"
+    with open(path, "wb+") as file_object:
+        shutil.copyfileobj(file.file, file_object)
+    return UploadResult(path=path)
 
 class AnalyzeInput(BaseModel):
-    q: str
+    path: str
+    question: str
 
 class Data(BaseModel):
     data: str
@@ -55,7 +64,8 @@ class Data(BaseModel):
 @app.post("/api/py/analyze",
     response_model=Data
 )
-async def analyze(q: AnalyzeInput):
+async def analyze(input: AnalyzeInput):
+    loader = CSVLoader(input.path)
     docs = loader.load_and_split()
     vectorStore = FAISS.from_documents(docs, cached_embeddings)
     retriever = vectorStore.as_retriever()
@@ -70,6 +80,6 @@ async def analyze(q: AnalyzeInput):
         "question": RunnablePassthrough()
         } | prompt | llm
 
-    response = chain.invoke(q.q)
+    response = chain.invoke(input.question)
 
     return Data(data=response.content)

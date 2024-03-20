@@ -23,6 +23,7 @@ import { readExcel } from "@/lib/utils";
 type BeforeDropProps = {
   setExcelFile: Dispatch<SetStateAction<File | undefined>>;
   setData: Dispatch<SetStateAction<unknown[] | undefined>>;
+  setFilePath: Dispatch<SetStateAction<string | undefined>>;
 };
 
 type AfterDropProps = {
@@ -30,9 +31,7 @@ type AfterDropProps = {
   setOpen: Dispatch<SetStateAction<boolean>>;
 };
 
-function BeforeDrop({ setExcelFile, setData }: BeforeDropProps) {
-  const FILE_EXTENSION = ["csv", "xlsx", "xls"];
-
+function BeforeDrop({ setExcelFile, setData, setFilePath }: BeforeDropProps) {
   const validator = (file: File) => {
     if (file.size / 1024 / 1024 > 3) {
       return {
@@ -41,14 +40,10 @@ function BeforeDrop({ setExcelFile, setData }: BeforeDropProps) {
       };
     }
 
-    if (
-      !FILE_EXTENSION.includes(
-        file?.name?.split(".").pop()?.toLowerCase() ?? "",
-      )
-    ) {
+    if (file?.name?.split(".").pop()?.toLowerCase() !== "csv") {
       return {
         code: "file-invalid-type",
-        message: "Only .csv, .xlsx, or .xls files are allowed.",
+        message: "Only .csv files are allowed.",
       };
     }
 
@@ -58,16 +53,29 @@ function BeforeDrop({ setExcelFile, setData }: BeforeDropProps) {
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       const showExcelFile = async (file: File) => {
+        const formData = new FormData();
+        formData.append("file", file);
         const fileData = await readExcel(file);
+
+        const res = (await (
+          await fetch("http://127.0.0.1:5328/api/py/upload", {
+            method: "POST",
+            body: formData,
+          })
+        ).json()) as {
+          path: string;
+        };
+
+        setFilePath(res.path);
         setData(fileData);
+        setExcelFile(file);
       };
 
       if (acceptedFiles[0]) {
         void showExcelFile(acceptedFiles[0]);
-        setExcelFile(acceptedFiles[0]);
       }
     },
-    [setExcelFile, setData],
+    [setExcelFile, setData, setFilePath],
   );
 
   const { getRootProps, getInputProps, isDragActive, fileRejections } =
@@ -98,8 +106,7 @@ function BeforeDrop({ setExcelFile, setData }: BeforeDropProps) {
           <>
             <DownloadIcon className="h-16 w-16" />
             <span className="mt-4 px-4 text-center">
-              Drop your excel file. (Only .csv, .xlsx, or .xls file / max size 3
-              MB)
+              Drop your excel file. (Only .csv file / max size 3 MB)
             </span>
           </>
         )}
@@ -112,26 +119,36 @@ function BeforeDrop({ setExcelFile, setData }: BeforeDropProps) {
 function AfterDrop({ data, setOpen }: AfterDropProps) {
   const [excelData, setExcelData] = useState<unknown[]>([]);
   const [page, setPage] = useState(0);
-  const [more, setMore] = useState(true);
+  const [more, setMore] = useState((data && data.length >= 50) ?? false);
 
   const handleScroll = (event: UIEvent<HTMLElement>) => {
     const { scrollTop, clientHeight, scrollHeight } = event.currentTarget;
     if (scrollHeight - scrollTop <= clientHeight * 1.5) {
-      if (more) {
-        setPage((prevPage) => prevPage + 1);
+      if (data) {
+        if (more) {
+          setPage((prevPage) => prevPage + 1);
+        } else {
+          setExcelData(data);
+        }
       }
     }
   };
 
   useEffect(() => {
-    if (more && data) {
+    if (data) {
       const newData = data.slice(50 * page, 50 * (page + 1));
       setExcelData((prev) => [...prev, ...newData]);
       if (newData.length < 50) {
         setMore(false);
       }
     }
-  }, [page, data, more]);
+  }, [page, data]);
+
+  useEffect(() => {
+    if (data) {
+      setExcelData(data.slice(0, 50));
+    }
+  }, [data]);
 
   return (
     <>
@@ -178,6 +195,7 @@ export default function Home() {
   const [excelFile, setExcelFile] = useState<File>();
   const [data, setData] = useState<unknown[]>();
   const [open, setOpen] = useState(false);
+  const [filePath, setFilePath] = useState<string>();
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "auto";
@@ -195,10 +213,14 @@ export default function Home() {
         {excelFile ? (
           <AfterDrop data={data} setOpen={setOpen} />
         ) : (
-          <BeforeDrop setExcelFile={setExcelFile} setData={setData} />
+          <BeforeDrop
+            setExcelFile={setExcelFile}
+            setData={setData}
+            setFilePath={setFilePath}
+          />
         )}
       </div>
-      <Modal open={open} setOpen={setOpen} />
+      <Modal open={open} setOpen={setOpen} filePath={filePath} />
     </>
   );
 }
