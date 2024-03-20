@@ -94,7 +94,7 @@ function BeforeDrop({ setExcelFile, setData, setFilePath }: BeforeDropProps) {
     <>
       <div
         {...getRootProps()}
-        className={`flex-y-center mx-auto my-auto min-h-[65vh] w-4/5 cursor-pointer rounded-md border border-dashed ${isDragActive ? "border-emerald-600 bg-gray-200 text-emerald-600" : "border-gray-500 text-gray-500"}`}
+        className={`flex-y-center mx-auto my-auto min-h-[65vh] w-4/5 cursor-pointer rounded-md border border-dashed bg-inherit ${isDragActive ? "border-emerald-600 bg-gray-200 text-emerald-600" : "border-gray-500 text-gray-500"}`}
       >
         <input {...getInputProps()} />
         {isDragActive ? (
