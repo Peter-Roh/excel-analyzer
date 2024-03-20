@@ -2,6 +2,12 @@
 
 <img src="https://github.com/Peter-Roh/excel-analyzer/assets/36218264/b17a5de5-849f-4e60-8ea8-020f9ae6ea3d" width="50%" />
 
+## Demo
+
+https://github.com/Peter-Roh/excel-analyzer/assets/36218264/13da9cc7-26c6-4b9b-b77c-83edab260abc
+
+[Link to Demo Video](https://drive.google.com/file/d/1wVhuevswRSXXTEZk_sCsFdEy67BKFwNP/view?usp=drive_link)
+
 ## Tech Stack
 
 - [Create-T3-App](https://create.t3.gg/) - boilerplate
